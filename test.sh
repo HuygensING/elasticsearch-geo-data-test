@@ -1,8 +1,13 @@
 #!/bin/bash
 
-if [ "$1" == "restart" ] 
+if [ "$1" == "restart" ] || [ "$1" == "stop" ]
 then
 	docker stop es-geo-test
+	
+	if [ "$1" == "stop" ]
+	then
+		exit 0
+	fi
 fi
 
 ALREADY_RUNNING=`docker inspect -f {{.State.Running}} es-geo-test`
