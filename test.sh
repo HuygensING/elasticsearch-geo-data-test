@@ -20,7 +20,7 @@ else
 	docker rm es-geo-test # remove the old image
 fi
 
-ES_CONTAINER=`docker run --name "es-geo-test" -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.2.4`
+ES_CONTAINER=`docker run --name "es-geo-test" -d -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "http.cors.enabled=true" -e "http.cors.allow-origin=*"  docker.elastic.co/elasticsearch/elasticsearch:6.2.4`
 
 IS_RUNNING=false
 

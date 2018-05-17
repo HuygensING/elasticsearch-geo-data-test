@@ -1,0 +1,47 @@
+<html>
+	<head>
+		<meta charset="utf-8"/>
+	</head>
+	<body>
+		<script src="js/latlon-geohash.js"></script>
+		<script>
+			function createMarker(geohash, doc_count) {
+				var coordinates = Geohash.decode(geohash);
+				return "&markers=" + coordinates.lat + "," + coordinates.lon;
+			}
+			function createMap(buckets){
+				var mapUri = "https://maps.googleapis.com/maps/api/staticmap?size=600x300&maptype=roadmap"
+				buckets.forEach(function(element) {
+					mapUri = mapUri + createMarker(element.key, element.doc_count);
+				});
+				return mapUri;	
+			}
+			
+			var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4) {
+					var responseData = JSON.parse(xhr.response);									
+					var img = document.createElement("img");
+					img.setAttribute("src", createMap(responseData.aggregations.test.buckets));
+					document.body.appendChild(img);
+				}				
+			}
+			
+			xhr.open("POST", "http://localhost:9200/geo_data/_search", true);
+			xhr.setRequestHeader("Content-type", "application/json");
+			xhr.send(JSON.stringify({ "size": 0,
+				"query" : {
+					"match_all": {}
+				},
+				"aggs": {
+					"test": {
+						"geohash_grid": {
+							"field": "geometry.coordinates",
+							"precision": 5
+						}
+					}
+				}
+			}));					
+		</script>
+	</body>
+</html>
