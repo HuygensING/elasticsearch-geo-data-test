@@ -1,47 +1,66 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8"/>
+		<style>
+			#map {
+		        	height: 400px;
+			        width: 100%;
+		       }
+		</style>
 	</head>
 	<body>
+		<div id="map">
+		</div>
 		<script src="js/latlon-geohash.js"></script>
 		<script>
-			function createMarker(geohash, doc_count) {
+			function addMarker(map, geohash, doc_count) {
 				var coordinates = Geohash.decode(geohash);
-				return "&markers=" + coordinates.lat + "," + coordinates.lon;
+				new google.maps.Marker({
+					position: { lat: coordinates.lat, lng: coordinates.lon },
+					map: map,
+					title: "" + doc_count
+				});
 			}
 			function createMap(buckets){
-				var mapUri = "https://maps.googleapis.com/maps/api/staticmap?size=600x300&maptype=roadmap"
-				buckets.forEach(function(element) {
-					mapUri = mapUri + createMarker(element.key, element.doc_count);
+				var amsterdam = { lat: 52.40, lng: 4.50 };
+				var map = new google.maps.Map(document.getElementById('map'), {
+					center: amsterdam,
+					zoom: 10
 				});
-				return mapUri;	
+				
+				buckets.forEach(function(element) {
+					addMarker(map, element.key, element.doc_count);
+				});
 			}
+			function initMap() {
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === 4) {
+						var responseData = JSON.parse(xhr.response);									
+						createMap(responseData.aggregations.test.buckets);
+					}				
+				}
 			
-			var xhr = new XMLHttpRequest();
-			xhr.onreadystatechange = function() {
-				if (xhr.readyState === 4) {
-					var responseData = JSON.parse(xhr.response);									
-					var img = document.createElement("img");
-					img.setAttribute("src", createMap(responseData.aggregations.test.buckets));
-					document.body.appendChild(img);
-				}				
-			}
-			
-			xhr.open("POST", "http://localhost:9200/geo_data/_search", true);
-			xhr.setRequestHeader("Content-type", "application/json");
-			xhr.send(JSON.stringify({ "size": 0,
-				"query" : {
-					"match_all": {}
-				},
-				"aggs": {
-					"test": {
-						"geohash_grid": {
-							"field": "geometry.coordinates",
-							"precision": 5
+				xhr.open("POST", "http://localhost:9200/geo_data/_search", true);
+				xhr.setRequestHeader("Content-type", "application/json");
+				xhr.send(JSON.stringify({ "size": 0,
+					"query" : {
+						"match_all": {}
+					},
+					"aggs": {
+						"test": {
+							"geohash_grid": {
+								"field": "geometry.coordinates",
+								"precision": 5
+							}
 						}
 					}
-				}
-			}));					
+				}));
+			}					
+		</script>
+		<script async defer
+		src="https://maps.googleapis.com/maps/api/js?callback=initMap">
 		</script>
 	</body>
 </html>
