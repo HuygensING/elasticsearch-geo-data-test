@@ -4,9 +4,14 @@
 		<meta charset="utf-8"/>
 		<style>
 			#map {
-		        	height: 400px;
-			        width: 100%;
-		       }
+		        	height: 100%;
+			        width: 100%
+			}
+			html, body {
+        	       		height: 100%;
+	        		margin: 0;
+        			padding: 0;
+      			}
 		</style>
 	</head>
 	<body>
@@ -37,17 +42,30 @@
 				});
 
 			}
+			
+			function addOverlay(map) {
+				var imageBounds = {
+			        	north: 52.384,
+          				south: 52.35,
+          				east: 4.933,
+          				west: 4.860
+			        };
+				var overlay = new google.maps.GroundOverlay("large-detailed-old-map-of-amsterdam-city-(1385-1875)[rotate].png", imageBounds);
+				overlay.setMap(map);
+			}
+			
 			function createMap(buckets){
 				var amsterdam = { lat: 52.40, lng: 4.50 };
 				var map = new google.maps.Map(document.getElementById('map'), {
 					center: amsterdam,
 					zoom: 10
 				});
-				
+				addOverlay(map);				
 				buckets.forEach(function(element) {
 					addMarker(map, element.key, element.doc_count);
 				});
 			}
+			
 			function initMap() {
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
