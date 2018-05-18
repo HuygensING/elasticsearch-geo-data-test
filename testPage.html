@@ -19,6 +19,7 @@
 		</div>
 		<script src="js/latlon-geohash.js"></script>
 		<script>
+			var currentMarkers = [];
 			function addMarker(map, geohash, doc_count) {
 				var coordinates = Geohash.decode(geohash);
 				var marker = new google.maps.Marker({
@@ -40,6 +41,7 @@
 				marker.addListener('click', function() {
 					infoWindow.open(map, marker);
 				});
+				currentMarkers.push(marker);
 
 			}
 			
@@ -54,24 +56,22 @@
 				overlay.setMap(map);
 			}
 			
-			function createMap(buckets){
-				var amsterdam = { lat: 52.40, lng: 4.50 };
-				var map = new google.maps.Map(document.getElementById('map'), {
-					center: amsterdam,
-					zoom: 10
-				});
-				addOverlay(map);				
-				buckets.forEach(function(element) {
+			function fillMap(map, markers) {
+				// remove old markers from the map		
+				while (currentMarkers.length > 0) {
+					currentMarkers.pop().setMap(null);
+				}
+				markers.forEach(function(element) {
 					addMarker(map, element.key, element.doc_count);
 				});
 			}
 			
-			function initMap() {
+			function executeQuery(map, precision) {
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4) {
 						var responseData = JSON.parse(xhr.response);									
-						createMap(responseData.aggregations.test.buckets);
+						fillMap(map, responseData.aggregations.test.buckets);
 					}				
 				}
 			
@@ -85,11 +85,35 @@
 						"test": {
 							"geohash_grid": {
 								"field": "geometry.coordinates",
-								"precision": 5
+								"precision": precision 
 							}
 						}
 					}
 				}));
+				
+			}
+			var defaultZoom = 13;
+			var defaultPrecision = 5;
+			function calculatePrecision(currentZoom) {
+				return (currentZoom / defaultZoom) * defaultPrecision;
+			}
+			
+			function initMap() {
+				var amsterdam = { lat: 52.35, lng: 4.80 };
+				var map = new google.maps.Map(document.getElementById('map'), {
+					center: amsterdam,
+					zoom: 13
+				});
+				map.addListener("bounds_changed", function() {
+					console.log(map.getBounds());
+				});
+				addOverlay(map);				
+				map.addListener("zoom_changed", function() {
+					console.log("zoom", map.getZoom());
+					console.log("precision", calculatePrecision(map.getZoom()));
+					executeQuery(map, calculatePrecision(map.getZoom()));	
+				});
+				executeQuery(map, 5);
 			}					
 		</script>
 		<script async defer
