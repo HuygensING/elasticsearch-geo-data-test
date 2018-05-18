@@ -54,3 +54,5 @@ fi
 
 # import data
 python3 dataToEs.py
+
+sensible-browser testPage.html
