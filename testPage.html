@@ -66,7 +66,7 @@
 				});
 			}
 			
-			function executeQuery(map, precision) {
+			function executeQuery(map, precision, geo_box) {
 				var xhr = new XMLHttpRequest();
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4) {
@@ -79,7 +79,14 @@
 				xhr.setRequestHeader("Content-type", "application/json");
 				xhr.send(JSON.stringify({ "size": 0,
 					"query" : {
-						"match_all": {}
+						//"match_all": {}
+						"constant_score": {
+							"filter": {
+								"geo_bounding_box":{
+									"geometry.coordinates": geo_box
+								}
+							}
+						}
 					},
 					"aggs": {
 						"test": {
@@ -105,15 +112,13 @@
 					zoom: 13
 				});
 				map.addListener("bounds_changed", function() {
-					console.log(map.getBounds());
+					var bounds = map.getBounds();
+					var ne = bounds.getNorthEast();
+					var sw = bounds.getSouthWest();
+					
+					executeQuery(map, calculatePrecision(map.getZoom()), {"top_left": {"lat": ne.lat(), "lon": sw.lng()}, "bottom_right": {"lat": sw.lat(), "lon": ne.lng()}});	
 				});
 				addOverlay(map);				
-				map.addListener("zoom_changed", function() {
-					console.log("zoom", map.getZoom());
-					console.log("precision", calculatePrecision(map.getZoom()));
-					executeQuery(map, calculatePrecision(map.getZoom()));	
-				});
-				executeQuery(map, 5);
 			}					
 		</script>
 		<script async defer
