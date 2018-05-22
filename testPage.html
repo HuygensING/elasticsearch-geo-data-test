@@ -17,20 +17,24 @@
 	<body>
 		<div id="map">
 		</div>
-		<script src="js/latlon-geohash.js"></script>
 		<script>
+			function calculateCoordinates(element) {
+				var top_left = element.cell.bounds.top_left;
+				var bottom_right = element.cell.bounds.bottom_right;
+				return { "lat": (top_left.lat + bottom_right.lat)/2, "lon": (top_left.lon + bottom_right.lon)/2 };
+			}
 			var currentMarkers = [];
-			function addMarker(map, geohash, doc_count) {
-				var coordinates = Geohash.decode(geohash);
+			function addMarker(map, element) {
+				var coordinates = calculateCoordinates(element);
 				var marker = new google.maps.Marker({
 					position: { lat: coordinates.lat, lng: coordinates.lon },
 					map: map,
-					title: "" + doc_count
+					title: "" + element.doc_count
 				});
 				var contentString = '<div id="content">'+
 			       		'<div id="siteNotice">'+
       					'</div>'+
-				        '<h1 id="firstHeading" class="firstHeading">' + doc_count + '</h1>'+
+				        '<h1 id="firstHeading" class="firstHeading">' + element.doc_count + '</h1>'+
 				        '<div id="bodyContent">'+
       					'</div>'+
       					'</div>';
@@ -62,7 +66,7 @@
 					currentMarkers.pop().setMap(null);
 				}
 				markers.forEach(function(element) {
-					addMarker(map, element.key, element.doc_count);
+					addMarker(map, element);
 				});
 			}
 			
@@ -71,7 +75,7 @@
 				xhr.onreadystatechange = function() {
 					if (xhr.readyState === 4) {
 						var responseData = JSON.parse(xhr.response);									
-						fillMap(map, responseData.aggregations.test.buckets);
+						fillMap(map, responseData.aggregations.geodata.buckets);
 					}				
 				}
 			
@@ -79,7 +83,6 @@
 				xhr.setRequestHeader("Content-type", "application/json");
 				xhr.send(JSON.stringify({ "size": 0,
 					"query" : {
-						//"match_all": {}
 						"constant_score": {
 							"filter": {
 								"geo_bounding_box":{
@@ -89,10 +92,17 @@
 						}
 					},
 					"aggs": {
-						"test": {
+						"geodata": {
 							"geohash_grid": {
 								"field": "geometry.coordinates",
 								"precision": precision 
+							},
+							"aggs": {
+								"cell": {
+									"geo_bounds": {
+										"field": "geometry.coordinates",
+									}
+								}
 							}
 						}
 					}
